@@ -13,12 +13,16 @@ const todos: Todo[] = [...new Array(1000)].map((_, i) => ({
   isChecked: false,
 }));
 
+const throwOccasionalError = () => {
+  if (Math.random() < 0.1) {
+    throw new Error("Random error");
+  }
+};
+
 export const handlers = [
   http.get("*/todos", async () => {
     await delay(1000);
-    // if (Math.random() < 0.2) {
-    //   return HttpResponse.error();
-    // }
+    throwOccasionalError();
     return HttpResponse.json({ todos });
   }),
 
@@ -28,13 +32,15 @@ export const handlers = [
     todos.push({ id: String(todos.length + 1), text: newTodo.text });
     return HttpResponse.json(todos[todos.length - 1]);
   }),
-  http.put("*/checkTodo/:id", async ({ params }) => {
+
+  http.put("*/toggleTodo/:id", async ({ params }) => {
     await delay(200);
     const id = params.id;
     const todo = todos.find((todo) => todo.id === id);
     if (!todo) {
       return HttpResponse.error();
     }
+    throwOccasionalError();
     todo.isChecked = !todo.isChecked;
     return HttpResponse.json(todo);
   }),

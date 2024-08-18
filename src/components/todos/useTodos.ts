@@ -10,7 +10,12 @@ export const tFetch = async <T>(
   url: string,
   config?: RequestInit
 ): Promise<T> => {
-  const response = await fetch(url, config);
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    ...config,
+  });
   if (!response.ok) {
     throw new Error(`Error fetching ${url}: ${response.statusText}`);
   }
@@ -29,9 +34,6 @@ export const useAddTodo = () =>
     mutationFn: async (text: string) => {
       return tFetch<Todo>("/api/addTodo", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ text }),
       });
     },
@@ -42,23 +44,31 @@ export const useAddTodo = () =>
     },
   });
 
-export const useToggleCheck = () =>
+export const useToggleTodo = () =>
   useMutation({
-    mutationFn: async ({ id, isChecked }: Pick<Todo, "id" | "isChecked">) => {
-      tFetch(`/api/checkTodo/${id}`, {
+    mutationFn: async ({ id }: Pick<Todo, "id">) => {
+      tFetch(`/api/toggleTodo/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isChecked }),
       });
+
       queryClient.setQueryData(todosQuery.queryKey, (old) => {
         if (!old) return undefined;
-        console.log("hello?", old.todos.length, id);
 
         return {
           todos: old.todos.map((todo) =>
-            todo.id === id ? { ...todo, isChecked } : todo
+            todo.id === id ? { ...todo, isChecked: !todo.isChecked } : todo
+          ),
+        };
+      });
+    },
+    onError: (error, { id }) => {
+      queryClient.setQueryData(todosQuery.queryKey, (old) => {
+        if (!old) return undefined;
+        console.log("error", error);
+
+        return {
+          todos: old.todos.map((todo) =>
+            todo.id === id ? { ...todo, isChecked: !todo.isChecked } : todo
           ),
         };
       });
